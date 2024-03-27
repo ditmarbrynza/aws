@@ -1,0 +1,56 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  aws-test-1
+
+  Sample SAM Template for aws-test-1
+
+Globals:
+  Function:
+    Timeout: 60
+    MemorySize: 512
+
+    LoggingConfig:
+      LogFormat: JSON
+Resources:
+  ImagesBucket:
+    Type: AWS::S3::Bucket
+
+  SearchFilmsFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: search_films/
+      Handler: app.lambda_handler
+      Runtime: ruby3.2
+      Architectures:
+        - x86_64
+      # FunctionUrlConfig:
+      #   AuthType: NONE
+      Events:
+        SearchFilmsEvent:
+          Type: Api
+          Properties:
+            Path: /search_films
+            Method: post
+      Environment:
+        Variables:
+          IMAGES_BUCKET: !Ref ImagesBucket
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+          - Effect: Allow
+            Action:
+              - s3:PutObject
+              - s3:GetObject
+            Resource: !Sub
+              - ${BucketArn}/*
+              - { BucketArn: !GetAtt ImagesBucket.Arn }
+
+Outputs:
+  # SearchFilmsURL:
+  #   Description: API Gateway endpoint URL for Prod stage for Search Films function
+  #   Value: !GetAtt SearchFilmsFunctionUrl.FunctionUrl
+  HelloWorldApi:
+    Description: API Gateway endpoint URL for Prod stage for Search Films Function
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/search_films/"
+  
