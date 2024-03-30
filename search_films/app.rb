@@ -233,6 +233,7 @@ def create_message_text_for_inline(movie)
   result += "*Popularity*: #{movie[:popularity]}\n"
   result += "*Release Date*: #{movie[:release_date]}\n"
   result += "*Genre*: #{movie[:genres]}\n"
+  result += "[Poster](#{movie[:url].to_s})\n"
   result
 end
 
