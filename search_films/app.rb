@@ -50,21 +50,13 @@ def response_inline_to_client(inline_query_id, movies)
   results =  build_results_for_inline_query(movies)
 
   puts "results for inline query: #{results.inspect}"
-
-  # { 
-  #   statusCode: 200, 
-  #   method: "answerInlineQuery",
-  #   inline_query_id: inline_query_id,
-  #   results: results.to_json
-  # }
-
   uri = URI.parse("https://api.telegram.org/bot#{telegram_token}/answerInlineQuery")
   http = Net::HTTP.new(uri.host, uri.port)
   http.use_ssl = true
 
   data = {
     inline_query_id: inline_query_id,
-    results: results.to_json
+    results: results
   }
 
   puts "data: #{data.inspect}"
