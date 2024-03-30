@@ -35,10 +35,10 @@ def process_inline_query(inline_query)
   puts "inline_query_id: #{inline_query_id.inspect}"
   text = inline_query["query"]
   puts "requested text: #{text.inspect}"
+
   films = search_films_by_query(text)
   
   top_five = films["results"]&.first(5)
-  # return response_error_to_client(inline_query_id, "0 results was found, try again.") if top_five.empty?
 
   puts "top 5: #{top_five.inspect}"
   array_of_films = build_films_data(top_five)
@@ -73,6 +73,8 @@ def response_inline_to_client(inline_query_id, movies)
 end
 
 def process_message(message)
+  return status_code_200 if sent_via_bot?(message)
+
   chat_id = message["chat"]["id"]
   text = message["text"]
   puts "requested text: #{text.inspect}"
@@ -229,11 +231,12 @@ end
 
 def create_message_text_for_inline(movie)
   puts "movie: #{movie.inspect}"
-  result = "*Overview*: #{movie[:overview]}\n" 
+  result = "*Original Title *: #{movie[:original_title]}\n"
+  result += "*Overview*: #{movie[:overview]}\n" 
   result += "*Popularity*: #{movie[:popularity]}\n"
   result += "*Release Date*: #{movie[:release_date]}\n"
   result += "*Genre*: #{movie[:genres]}\n"
-  result += "[Poster](#{movie[:url].to_s})\n"
+  result += "*Poster*: [Poster](#{movie[:url].to_s})\n"
   result
 end
 
@@ -245,6 +248,14 @@ def create_description(movie)
   result += "*Popularity*: #{movie[:popularity]}\n"
   result += "*Release Date*: #{movie[:release_date]}\n"
   result += "*Genre*: #{movie[:genres]}\n"
+  result
+end
+
+def sent_via_bot?(message)
+  result = message&.dig("via_bot")&.dig("is_bot") == true
+  if result
+    puts "The message has been sent via bot."
+  end
   result
 end
 
