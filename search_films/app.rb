@@ -35,10 +35,10 @@ def process_inline_query(inline_query)
   puts "inline_query_id: #{inline_query_id.inspect}"
   text = inline_query["query"]
   puts "requested text: #{text.inspect}"
+
   films = search_films_by_query(text)
   
-  top_five = films["results"]&.first(1)
-  # return response_error_to_client(inline_query_id, "0 results was found, try again.") if top_five.empty?
+  top_five = films["results"]&.first(5)
 
   puts "top 5: #{top_five.inspect}"
   array_of_films = build_films_data(top_five)
@@ -47,19 +47,34 @@ def process_inline_query(inline_query)
 end
 
 def response_inline_to_client(inline_query_id, movies)
-  results =  build_inline_query_result_article(movies)
+  results =  build_results_for_inline_query(movies)
 
   puts "results for inline query: #{results.inspect}"
+  uri = URI.parse("https://api.telegram.org/bot#{telegram_token}/answerInlineQuery")
+  http = Net::HTTP.new(uri.host, uri.port)
+  http.use_ssl = true
 
-  { 
-    statusCode: 200, 
-    method: "answerInlineQuery",
+  data = {
     inline_query_id: inline_query_id,
-    results: results.to_json
+    results: results
   }
+
+  puts "data: #{data.inspect}"
+  json_data = data.to_json
+
+  headers = {'Content-Type' => 'application/json'}
+
+  response = http.post(uri.path, json_data, headers)
+
+  puts "-------------------------------------------------------------------"
+  puts "response for inline: #{response.body}"
+  
+  status_code_200
 end
 
 def process_message(message)
+  return status_code_200 if sent_via_bot?(message)
+
   chat_id = message["chat"]["id"]
   text = message["text"]
   puts "requested text: #{text.inspect}"
@@ -157,8 +172,8 @@ end
 
 def init_request_and_build_headers(url)
   request = Net::HTTP::Get.new(url)
-  request["accept"] = 'application/json'
-  request["Authorization"] = 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI5ZDE4MGQxN2YwZDE2MThhZmQ4NWE0OGU1OTVlNDdiMiIsInN1YiI6IjY1ZmQ5YWZlMTk3ZGU0MDE4NjE2YTM4ZCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.Sj2KOJSxLM83-C4TNysC-r1A5AUtklxfJznYkE0fdsg'
+  request["Accept"] = 'application/json'
+  request["Authorization"] = tmdb_token
   request
 end
 
@@ -198,14 +213,14 @@ def bucket
   @bucket ||= ENV["IMAGES_BUCKET"]
 end
 
-def build_inline_query_result_article(movies)
+def build_results_for_inline_query(movies)
   movies.map.with_index(1) do |movie, index|
     {
+      id: index,
       type: "article",
       title: movie[:original_title],
-      id: index,
-      url: movie[:url],
-      description: "Top 5 results of your query",
+      thumbnail_url: movie[:url].to_s,
+      description: "#{movie[:genres]} | #{movie[:popularity]} | #{movie[:overview]}",
       input_message_content: {
         message_text: create_message_text_for_inline(movie),
         parse_mode: "Markdown"
@@ -216,10 +231,12 @@ end
 
 def create_message_text_for_inline(movie)
   puts "movie: #{movie.inspect}"
-  result = "*Overview*: #{movie[:overview]}\n" 
+  result = "*Original Title *: #{movie[:original_title]}\n"
+  result += "*Overview*: #{movie[:overview]}\n" 
   result += "*Popularity*: #{movie[:popularity]}\n"
   result += "*Release Date*: #{movie[:release_date]}\n"
   result += "*Genre*: #{movie[:genres]}\n"
+  result += "*Poster*: [Poster](#{movie[:url].to_s})\n"
   result
 end
 
@@ -232,4 +249,20 @@ def create_description(movie)
   result += "*Release Date*: #{movie[:release_date]}\n"
   result += "*Genre*: #{movie[:genres]}\n"
   result
+end
+
+def sent_via_bot?(message)
+  result = message&.dig("via_bot")&.dig("is_bot") == true
+  if result
+    puts "The message has been sent via bot."
+  end
+  result
+end
+
+def tmdb_token
+  "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI5ZDE4MGQxN2YwZDE2MThhZmQ4NWE0OGU1OTVlNDdiMiIsInN1YiI6IjY1ZmQ5YWZlMTk3ZGU0MDE4NjE2YTM4ZCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.Sj2KOJSxLM83-C4TNysC-r1A5AUtklxfJznYkE0fdsg"
+end
+
+def telegram_token
+  "7147614064:AAEzUCzOKvm0Ct-WCv-o65xxHHSW_5KM94A"
 end
