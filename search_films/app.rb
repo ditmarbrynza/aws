@@ -3,11 +3,14 @@ require 'uri'
 require 'net/http'
 require 'aws-sdk-s3'
 require 'securerandom'
+require 'aws-sdk-secretsmanager'
 
 API_PATH = "https://api.themoviedb.org/3".freeze
 IMAGE_PATH = "https://image.tmdb.org/t/p/w500".freeze
 
 def lambda_handler(event:, context:)
+  init_default_data
+
   puts "event: #{event.inspect}"
   body = JSON.parse(event["body"])
   
@@ -50,7 +53,7 @@ def response_inline_to_client(inline_query_id, movies)
   results =  build_results_for_inline_query(movies)
 
   puts "results for inline query: #{results.inspect}"
-  uri = URI.parse("https://api.telegram.org/bot#{telegram_token}/answerInlineQuery")
+  uri = URI.parse("https://api.telegram.org/bot#{telegram_bot_token}/answerInlineQuery")
   http = Net::HTTP.new(uri.host, uri.port)
   http.use_ssl = true
 
@@ -260,9 +263,28 @@ def sent_via_bot?(message)
 end
 
 def tmdb_token
-  "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI5ZDE4MGQxN2YwZDE2MThhZmQ4NWE0OGU1OTVlNDdiMiIsInN1YiI6IjY1ZmQ5YWZlMTk3ZGU0MDE4NjE2YTM4ZCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.Sj2KOJSxLM83-C4TNysC-r1A5AUtklxfJznYkE0fdsg"
+  "Bearer #{@tmdb_token}"
 end
 
-def telegram_token
-  "7147614064:AAEzUCzOKvm0Ct-WCv-o65xxHHSW_5KM94A"
+def telegram_bot_token
+  @telegram_bot_token
+end
+
+def init_default_data
+  init_secrets
+end
+
+def init_secrets
+  client = Aws::SecretsManager::Client.new(region: 'eu-central-1')
+
+  begin
+    get_secret_value_response = client.get_secret_value(secret_id: 'aws_search_films_secrets')
+  rescue StandardError => e
+    puts "error in get secrets error: #{e.inspect}"
+    raise e
+  end
+
+  secret = JSON.parse(get_secret_value_response.secret_string)
+  @tmdb_token = secret["tmdb_token"]
+  @telegram_bot_token = secret["telegram_bot_token"]
 end

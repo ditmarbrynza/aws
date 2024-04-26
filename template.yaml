@@ -38,14 +38,18 @@ Resources:
       Policies:
         - Version: "2012-10-17"
           Statement:
-          - Effect: Allow
+          - Sid: AWSSecretsManagerGetSecretValuePolicy
+            Effect: Allow
+            Action: secretsmanager:GetSecretValue
+            Resource: arn:aws:secretsmanager:eu-central-1:654654244512:secret:aws_search_films_secrets-eLQcIH
+          Effect: Allow
             Action:
               - s3:PutObject
               - s3:GetObject
             Resource: !Sub
               - ${BucketArn}/*
               - { BucketArn: !GetAtt ImagesBucket.Arn }
-
+              
 Outputs:
   # SearchFilmsURL:
   #   Description: API Gateway endpoint URL for Prod stage for Search Films function
