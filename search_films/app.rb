@@ -4,6 +4,8 @@ require 'net/http'
 require 'aws-sdk-s3'
 require 'securerandom'
 require 'aws-sdk-secretsmanager'
+require_relative 'core/cache'
+require_relative 'core/process_message'
 
 API_PATH = "https://api.themoviedb.org/3".freeze
 IMAGE_PATH = "https://image.tmdb.org/t/p/w500".freeze
@@ -15,7 +17,7 @@ def lambda_handler(event:, context:)
   body = JSON.parse(event["body"])
   
   if body.key?("message")
-    process_message(body["message"])
+    ProcessMessage.call(message: body["message"])
   elsif body.key?("inline_query")
     process_inline_query(body["inline_query"])
   else
@@ -75,65 +77,7 @@ def response_inline_to_client(inline_query_id, movies)
   status_code_200
 end
 
-def process_message(message)
-  return status_code_200 if sent_via_bot?(message)
 
-  chat_id = message["chat"]["id"]
-  text = message["text"]
-  puts "requested text: #{text.inspect}"
-  films = search_films_by_query(text)
-  
-  top_five = films["results"]&.first(1)
-  return response_error_to_client(chat_id, "0 results was found, try again.") if top_five.empty?
-
-  puts "top 5: #{top_five.inspect}"
-  array_of_films = build_films_data(top_five)
-  puts "response: #{array_of_films.inspect}"
-  response_message_to_client(chat_id, array_of_films.first)
-end
-
-def response_message_to_client(chat_id, movie)
-  body = {
-    method: "sendMessage",
-    chat_id: chat_id,
-    text: create_description(movie),
-    parse_mode: "Markdown",
-  }
-
-  if !movie[:url].nil?
-    body.merge!(link_preview_options: {
-      url: movie[:url]
-    })
-  end
-
-  { 
-    statusCode: 200, 
-    body: body.to_json
-  }
-end
-
-def response_error_to_client(chat_id, text)
-  { 
-    statusCode: 200, 
-    body: {
-      method: "sendMessage",
-      chat_id: chat_id,
-      text: text
-    }.to_json
-  }
-end
-
-def search_films_by_query(query)
-  puts "text: #{query.inspect}"
-  url = URI("#{API_PATH}/search/movie?query=#{query}&include_adult=false&language=en-US&page=1&sort_by=popularity.desc")
-  http = Net::HTTP.new(url.host, url.port)
-  http.use_ssl = true
-  request = init_request_and_build_headers(url)
-  response = http.request(request)
-  body = JSON.parse(response.read_body)
-  puts "body: #{body.inspect}"
-  body
-end
 
 def build_films_data(films)
   puts "===== 0"
@@ -171,13 +115,6 @@ def default_data(body)
     release_date: body["release_date"],
     genres: body["genres"]&.first&.dig("name"),
   }
-end
-
-def init_request_and_build_headers(url)
-  request = Net::HTTP::Get.new(url)
-  request["Accept"] = 'application/json'
-  request["Authorization"] = tmdb_token
-  request
 end
 
 def s3
@@ -254,14 +191,6 @@ def create_description(movie)
   result
 end
 
-def sent_via_bot?(message)
-  result = message&.dig("via_bot")&.dig("is_bot") == true
-  if result
-    puts "The message has been sent via bot."
-  end
-  result
-end
-
 def tmdb_token
   "Bearer #{@tmdb_token}"
 end
@@ -288,3 +217,6 @@ def init_secrets
   @tmdb_token = secret["tmdb_token"]
   @telegram_bot_token = secret["telegram_bot_token"]
 end
+
+
+

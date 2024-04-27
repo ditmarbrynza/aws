@@ -13,6 +13,22 @@ Globals:
     LoggingConfig:
       LogFormat: JSON
 Resources:
+  ApplicationDB:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: query
+          AttributeType: S
+      KeySchema:
+        - AttributeName: query
+          KeyType: "HASH"
+      TimeToLiveSpecification: 
+        AttributeName: expired_at
+        Enabled: true
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+            
   ImagesBucket:
     Type: AWS::S3::Bucket
 
@@ -24,8 +40,6 @@ Resources:
       Runtime: ruby3.2
       Architectures:
         - x86_64
-      # FunctionUrlConfig:
-      #   AuthType: NONE
       Events:
         SearchFilmsEvent:
           Type: Api
@@ -35,6 +49,7 @@ Resources:
       Environment:
         Variables:
           IMAGES_BUCKET: !Ref ImagesBucket
+          DYNAMODB_TABLE: !Ref ApplicationDB
       Policies:
         - Version: "2012-10-17"
           Statement:
@@ -42,18 +57,26 @@ Resources:
             Effect: Allow
             Action: secretsmanager:GetSecretValue
             Resource: arn:aws:secretsmanager:eu-central-1:654654244512:secret:aws_search_films_secrets-eLQcIH
-          Effect: Allow
+          - Sid: DynamoDBTableAccess
+            Effect: Allow
+            Action: [
+              dynamodb:PutItem,
+              dynamodb:GetItem,
+              dynamodb:Scan,
+              dynamodb:Quer",
+              dynamodb:UpdateItem
+            ]
+            Resource: !GetAtt ApplicationDB.Arn
+          - Effect: Allow
             Action:
               - s3:PutObject
               - s3:GetObject
             Resource: !Sub
               - ${BucketArn}/*
               - { BucketArn: !GetAtt ImagesBucket.Arn }
+
               
 Outputs:
-  # SearchFilmsURL:
-  #   Description: API Gateway endpoint URL for Prod stage for Search Films function
-  #   Value: !GetAtt SearchFilmsFunctionUrl.FunctionUrl
   HelloWorldApi:
     Description: API Gateway endpoint URL for Prod stage for Search Films Function
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/search_films/"
