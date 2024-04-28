@@ -1,7 +1,8 @@
 # frozen_string_literal: true
+require "pry"
 
 class Cache
-  def self.get_item(client:, query:, type:)
+  def self.get_item(client:, query:)
     resp = client.get_item(
       table_name: ENV['DYNAMODB_TABLE'],
       key: {

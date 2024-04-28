@@ -1,58 +1,52 @@
 # frozen_string_literal: true
 
 require 'aws-sdk-dynamodb'
-require_relative 'core/cache'
+require_relative 'cache'
+require_relative 'queries/search_films_by_query'
 
 class ProcessMessage  
   def self.call(message:)
     new(message: message).call
   end
 
-  def initialize(message:)
+  def initialize(message:, search_films: Queries::SearchFilmsByQuery)
     @message = message
     @chat_id = message["chat"]["id"]
-    @text = message["text"]
+    @query = message["text"]
+    @search_films = search_films
   end
 
   def call
     return status_code_200 if sent_via_bot?
 
-    resp = Cache.get_item(client: dynamodb, query: text, type: :message)
+    resp = Cache.get_item(client: dynamodb, query: query, type: :message)
+    return resp[:ok] if resp.has_key?(:ok)
+    
+    resp = get_from_external_service
 
-    film_data = if resp.has_key?(:ok)
-      { ok: resp[:ok] }
-    else
-      get_from_external_service
-    end
-
-    if film_data.has_key?(:ok)
-      response_message_to_client(film_data)
-    else
-      film_data[:error]
-    end
   end
 
   private
 
-  attr_reader :message, :text, :chat_id
+  attr_reader :message, :query, :chat_id, :search_films
 
   def sent_via_bot?
     result = message&.dig("via_bot")&.dig("is_bot") == true
     if result
-      puts "The message has been sent via bot."
+      puts "#{self.class} The message has been sent via bot."
     end
     result
   end
 
   def get_from_external_service
-    films = search_films_by_query(text)
+    result = search_film.call(query: query)
     
-    top_five = films["results"]&.first(1)
-    return {error: response_error_to_client(chat_id, "0 results was found, try again.")} if top_five.empty?
+    films = result["results"]&.first(1)
+    return zero_results_error if films.empty?
   
-    film = build_films_data(top_five).first
+    film = build_films_data(film_id: films.first["id"])
   
-    Cache.put_item(client: dynamodb, film: film, query: text)
+    # Cache.put_item(client: dynamodb, film: film, query: query)
   
     {ok: film}
   end
@@ -61,6 +55,12 @@ class ProcessMessage
     {
       statusCode: 200,
       body: "OK"
+    }
+  end
+
+  def zero_results_error
+    {
+      error: response_error_to_client("0 results was found, try again.")
     }
   end
 
@@ -84,7 +84,7 @@ class ProcessMessage
     }
   end
 
-  def response_error_to_client(chat_id, text)
+  def response_error_to_client(text)
     { 
       statusCode: 200, 
       body: {

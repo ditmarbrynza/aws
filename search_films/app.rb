@@ -7,7 +7,7 @@ require 'aws-sdk-secretsmanager'
 require_relative 'core/cache'
 require_relative 'core/process_message'
 
-API_PATH = "https://api.themoviedb.org/3".freeze
+
 IMAGE_PATH = "https://image.tmdb.org/t/p/w500".freeze
 
 def lambda_handler(event:, context:)
@@ -191,32 +191,7 @@ def create_description(movie)
   result
 end
 
-def tmdb_token
-  "Bearer #{@tmdb_token}"
-end
 
-def telegram_bot_token
-  @telegram_bot_token
-end
-
-def init_default_data
-  init_secrets
-end
-
-def init_secrets
-  client = Aws::SecretsManager::Client.new(region: 'eu-central-1')
-
-  begin
-    get_secret_value_response = client.get_secret_value(secret_id: 'aws_search_films_secrets')
-  rescue StandardError => e
-    puts "error in get secrets error: #{e.inspect}"
-    raise e
-  end
-
-  secret = JSON.parse(get_secret_value_response.secret_string)
-  @tmdb_token = secret["tmdb_token"]
-  @telegram_bot_token = secret["telegram_bot_token"]
-end
 
 
 
