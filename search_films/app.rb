@@ -4,11 +4,7 @@ require 'net/http'
 require 'aws-sdk-s3'
 require 'securerandom'
 require 'aws-sdk-secretsmanager'
-require_relative 'core/cache'
 require_relative 'core/process_message'
-
-
-IMAGE_PATH = "https://image.tmdb.org/t/p/w500".freeze
 
 def lambda_handler(event:, context:)
   init_default_data
@@ -189,6 +185,16 @@ def create_description(movie)
   result += "*Release Date*: #{movie[:release_date]}\n"
   result += "*Genre*: #{movie[:genres]}\n"
   result
+
+
+  {
+    id: body["id"],
+    original_title: body["original_title"],
+    overview: body["overview"],
+    popularity: body["popularity"],
+    release_date: body["release_date"],
+    genres: body["genres"]&.first&.dig("name"),
+  }
 end
 
 

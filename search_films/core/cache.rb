@@ -15,7 +15,7 @@ class Cache
     result = if !resp["item"].nil? && resp["item"]&.dig("expired_at").to_i > Time.now.utc.to_i
       { ok: resp["item"]["data"] }
     else
-      { error: :item_does_not_exist_or_invalid }
+      { error: :item_does_not_exist_or_expired }
     end
 
     puts "[#{self}] get_item method returns: #{result.inspect}"

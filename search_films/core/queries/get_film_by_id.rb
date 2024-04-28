@@ -1,5 +1,11 @@
+# frozen_string_literal: true
+
+require 'json'
+require 'uri'
+require 'net/http'
+
 module Queries
-  class GetFilm
+  class GetFilmById
     API_PATH = "https://api.themoviedb.org/3".freeze
     GET_FILM_BY_ID = ->(id){ URI("#{API_PATH}/movie/#{id}?language=en-US") }
 
@@ -11,6 +17,7 @@ module Queries
       @id = id
     end
 
+    # @returns {}
     def call
       url = GET_FILM_BY_ID.call(id)
       response = get_request(url)
@@ -20,6 +27,8 @@ module Queries
     end
 
     private
+
+    attr_reader :id
 
     def get_request(url)
       http = Net::HTTP.new(url.host, url.port)

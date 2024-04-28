@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+require 'json'
+require 'uri'
+require 'net/http'
+
 module Queries
   class SearchFilmsByQuery
     API_PATH = "https://api.themoviedb.org/3".freeze
@@ -14,12 +18,13 @@ module Queries
       @secrets_client = secrets_client
     end
 
+    # @returns [{},{} ... {}]
     def call
       url = GET_FILMS_BY_QUERY_URL.call(query_params(query))
       response = get_request(url)
       body = JSON.parse(response.read_body)
-      puts "[#{self.class}] returns #{body.inspect}"
-      body
+      puts "[#{self.class}] returns #{body["results"].inspect}"
+      body["results"]
     end
 
     private
