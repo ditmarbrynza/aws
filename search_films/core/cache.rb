@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "pry"
 
 class Cache
   def self.get_item(client:, query:)
