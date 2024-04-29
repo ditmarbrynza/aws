@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'aws-sdk-s3'
 require 'json'
 require 'uri'
 require 'net/http'
@@ -8,24 +9,25 @@ module Queries
   class UploadPosterToBucket
     IMAGE_PATH = "https://image.tmdb.org/t/p/w500".freeze
 
-    def self.call(poster_path)
-      new(poster_path).call
+    def self.call(s3_key:)
+      new(s3_key: s3_key).call
     end
 
-    def initialize(poster_path)
-      @poster_path = poster_path
+    def initialize(s3_key:, secrets_client: Secrets)
+      @s3_key = s3_key
+      @secrets_client = secrets_client
     end
 
     def call
-      url = URI("#{IMAGE_PATH}/#{poster_path}")
+      url = URI("#{IMAGE_PATH}/#{s3_key}")
       response = get_request(url)
       image = response.body
-      upload_poster_to_s3(image, poster_path)
+      upload_poster_to_s3(image)
     end
 
     private
 
-    attr_reader :poster_path
+    attr_reader :s3_key, :secrets_client
 
     def get_request(url)
       http = Net::HTTP.new(url.host, url.port)
@@ -41,10 +43,10 @@ module Queries
       request
     end
     
-    def upload_poster_to_s3(image, poster_path)
+    def upload_poster_to_s3(image)
       s3.put_object(
         bucket: bucket,
-        key: poster_path,
+        key: s3_key,
         body: image
       )
     end

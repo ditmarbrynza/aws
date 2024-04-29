@@ -7,7 +7,7 @@ require 'net/http'
 module Queries
   class SearchFilmsByQuery
     API_PATH = "https://api.themoviedb.org/3".freeze
-    GET_FILMS_BY_QUERY_URL = ->(query_params) { "#{API_PATH}/search/movie?#{query_params}" }
+    GET_FILMS_BY_QUERY_URL = ->(query_params) { URI("#{API_PATH}/search/movie?#{query_params}") }
 
     def self.call(query:)
       new(query: query).call
