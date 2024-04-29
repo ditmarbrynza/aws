@@ -140,10 +140,6 @@ class ProcessMessage
     url
   end
 
-  def dynamodb
-    @dynamodb ||= Aws::DynamoDB::Client.new
-  end
-
   def build_description(film)
     result = "Top movie by popularity for your query\n"
     result += "*Original Title *: #{film["original_title"]}\n"
@@ -155,4 +151,12 @@ class ProcessMessage
     puts "[#{self.class}] build_description returns: #{result.inspect}"
     result
   end
+end
+
+def signer
+  @signer ||= Aws::S3::Presigner.new 
+end
+
+def dynamodb
+  @dynamodb ||= Aws::DynamoDB::Client.new
 end
