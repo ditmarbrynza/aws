@@ -3,7 +3,6 @@
 require 'json'
 require 'uri'
 require 'net/http'
-require_relative '../secrets'
 
 module Queries
   class SearchFilmsByQuery
