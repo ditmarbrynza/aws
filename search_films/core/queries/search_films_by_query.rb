@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require 'json'
-require 'uri'
-require 'net/http'
-
 module Queries
   class SearchFilmsByQuery
     API_PATH = "https://api.themoviedb.org/3".freeze

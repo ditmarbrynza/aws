@@ -1,11 +1,5 @@
 # frozen_string_literal: true
 
-require 'aws-sdk-dynamodb'
-require_relative 'cache'
-require_relative 'queries/search_films_by_query'
-require_relative 'queries/upload_poster_to_bucket'
-require_relative 'queries/get_film_by_id'
-
 class ProcessMessage  
   def self.call(message:)
     new(message: message).call

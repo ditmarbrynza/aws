@@ -1,10 +1,5 @@
 # frozen_string_literal: true
 
-require 'aws-sdk-s3'
-require 'json'
-require 'uri'
-require 'net/http'
-
 module Queries
   class UploadPosterToBucket
     IMAGE_PATH = "https://image.tmdb.org/t/p/w500".freeze

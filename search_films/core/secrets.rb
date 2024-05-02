@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'aws-sdk-secretsmanager'
-
 class Secrets
   def self.call
     new.call
