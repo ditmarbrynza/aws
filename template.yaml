@@ -19,9 +19,13 @@ Resources:
       AttributeDefinitions:
         - AttributeName: query
           AttributeType: S
+        - AttributeName: type
+          AttributeType: S
       KeySchema:
         - AttributeName: query
-          KeyType: "HASH"
+          KeyType: HASH
+        - AttributeName: type
+          KeyType: RANGE
       TimeToLiveSpecification: 
         AttributeName: expired_at
         Enabled: true

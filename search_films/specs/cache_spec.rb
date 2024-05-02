@@ -14,7 +14,7 @@ RSpec.describe Cache do
       end
 
       it do
-        resp = described_class.get_item(client: client, query: "batman")
+        resp = described_class.get_item(client: client, query: "batman", type: :message)
         expect(resp.has_key?(:ok)).to eq(true)
       end
     end
@@ -27,7 +27,7 @@ RSpec.describe Cache do
       end
 
       it do
-        resp = described_class.get_item(client: client, query: "batman")
+        resp = described_class.get_item(client: client, query: "batman", type: :message)
         expect(resp.has_key?(:error)).to eq(true)
       end
     end

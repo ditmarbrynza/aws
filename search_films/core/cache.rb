@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
 class Cache
-  def self.get_item(client:, query:)
+  def self.get_item(client:, query:, type:)
     resp = client.get_item(
       table_name: ENV['DYNAMODB_TABLE'],
       key: {
-        query: query
+        query: query,
+        type: type
       }
     )
   
@@ -22,9 +23,10 @@ class Cache
     result
   end
 
-  def self.put_item(client:, film:, query:) 
+  def self.put_item(client:, film:, query:, type:) 
     item = {
       query: query,
+      type: type,
       data: film,
       expired_at: (Time.now.utc + 7 * 24 * 60 * 60).to_i
     }
